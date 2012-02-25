@@ -6,44 +6,82 @@
 
     this.Sudoku = Sudoku;
 
-    Sudoku.prototype.Solve = function (a) {
-        var n_solved,best;
-        a = [].concat(a);
+    /*
+        Solve is the entry point, it will either return a completed
+        grid or throw an error.
 
+        @param a {array} sudoku grid
+        @return {array} completed sudoku 
+    */
+    Sudoku.prototype.Solve = function (a) {
+        a = [].concat(a);
+        a = this.TrySolve(a,0);
+
+        if (!this.IsSolved(a)) {
+            throw new Error('unable to solve grid');
+        }
+        return a;
+    };
+
+    /*
+        TrySolve recursively attempts to solve the sudoku grid.
+
+        First simple moves are completed until either the puzzle is solved or 
+        more complex rules could be used. However, instead of using more complex
+        rules this solver makes recursive guesses. Picking the branches with the fewest options.
+        
+        Eventually it will work out that a particular branch either yeilds the answer or it
+        is impossible to continue. 
+
+        @param a {array} sudoku grid
+        @param count {number} current stack level
+        @returns {array} possibly complete sudoku grid.
+    */
+    Sudoku.prototype.TrySolve = function (a,count) {
+        var i, p, j, made_change, b, best;
+
+        // count is used to work out the current level of recusion
+        count = count + 1;
+
+        // copy a - don't modify passed in array.
+        a = [].concat(a);
         while(!this.IsSolved(a)) {
-            n_solved = 0;
-            best = { val: [1,2,3,4,5,6,7,8,9], id: 0}; 
+            made_change = false;
+            best = { possible: [1,2,3,4,5,6,7,8,9], index : 0 };
             for (i=0;i<a.length;i=i+1) {
                 if (a[i] === 0) {
+                    // unsolved square
                     p = this.Possible(a,i);
-                    if (p.length < best.val.length) {
-                        best.val = p;
-                        best.id  = i;
-                    }
-                    if (p.length === 1) {
-                        console.log('set ' + i + ' to ' + p[0]);
-                        console.log('row',this.FetchRow(a,i));
-                        console.log('col',this.FetchColumn(a,i));
-                        console.log('squ',this.FetchSquare(a,i));
-                        a[i] = p[0];
-                        console.log(this.Print(a));
-                        n_solved = n_solved + 1;
-                    }   
-                    
+
                     if (p.length === 0) {
-                        console.log('error: ' + i);
-                        console.log('row',this.FetchRow(a,i));
-                        console.log('col',this.FetchColumn(a,i));
-                        console.log('squ',this.FetchSquare(a,i));
+                        // dead end.
                         return a;
                     }
-                }
+                
+                    // make a change
+                    if (p.length === 1) {
+                        a[i] = p[0];
+                        made_change = true;
+                    } else {
+                        // store p if its better than the current best
+                        if (p.length < best.possible.length) {
+                            best.possible = p;
+                            best.index = i;
+                        }
+                    }
+                } 
             }
-            if (n_solved == 0) {
-                console.log('error: infinite loop');
-                console.log('best',best);
-                // make a guess instead
-                a[best.id] = best.val[0];
+
+            if (made_change === false) {
+                // make a guess
+                for (j=0;j<best.possible.length;j=j+1) {
+                    a[best.index] = best.possible[j]; 
+                    b = this.TrySolve(a,count);
+                    if (this.IsSolved(b)) {
+                        return b;
+                    } 
+                } 
+                return a; 
             }
         }
         return a;
@@ -134,7 +172,7 @@
         r = [];
 
         start = j - (j % this.gridsize);
-        end   = start + this.gridsize
+        end   = start + this.gridsize;
 
         for (i=start;i<end;i=i+1) {
             r.push(a[i]);
@@ -153,7 +191,7 @@
     Sudoku.prototype.FetchColumn = function (a,j) {
         var i,r,start;
         r = [];
-        start = (j % this.gridsize)
+        start = (j % this.gridsize);
         for (i=start;i<a.length;i=i+this.gridsize) {
             r.push(a[i]);
         }
@@ -170,7 +208,7 @@
         @return {array} array containing the square which j is within
     */
     Sudoku.prototype.FetchSquare = function (a,j) {
-        var i,r,diff, hstart;
+        var r,diff;
        
         j = j - (j% this.gridsize) % (this.gridsize /3); 
         diff = (j % (this.gridsize * 3));
@@ -192,7 +230,7 @@
         @return {string} pretty printed representation of the grid
     */
     Sudoku.prototype.Print = function (a) {
-        var i,j,s;
+        var i,s;
         s = '';
         for (i=0;i<a.length;i=i+1) {
             s = s + a[i];
@@ -214,9 +252,9 @@
         
 }());
 
-var easy,s,r;
+var easy,easyb,medium,mediumb,evil,s,runx;
 
-// broken?
+// not broken
 easyb = [7,0,1,5,9,0,0,4,0,
         8,3,0,0,6,0,1,9,0,
         0,9,2,0,0,0,0,0,0,
@@ -237,7 +275,7 @@ easy = [0,3,4,0,1,0,0,6,0,
         0,0,0,1,8,0,0,0,0,
         0,1,0,0,5,0,6,7,0];
 
-
+// http://www.websudoku.com/?level=2&set_id=5949626450
 medium = [0,3,6,1,0,0,5,0,0,
           0,0,8,0,6,0,0,3,0,
           0,2,0,8,0,0,0,0,0,
@@ -248,7 +286,8 @@ medium = [0,3,6,1,0,0,5,0,0,
           0,7,0,0,4,0,8,0,0,
           0,0,1,0,0,8,6,2,0];
 
-medium2 = [0,0,1,8,0,0,0,0,7,
+// http://www.websudoku.com/?level=2&set_id=7019587306
+mediumb = [0,0,1,8,0,0,0,0,7,
            0,0,3,0,2,0,1,0,0,
            2,7,5,0,9,0,8,0,0,
            0,8,0,0,0,0,0,0,9,
@@ -258,7 +297,24 @@ medium2 = [0,0,1,8,0,0,0,0,7,
            0,0,9,0,6,0,7,0,0,
            1,0,0,0,0,9,6,0,0];
 
-s = new Sudoku();
-//s.Print(easy);
-//r = s.Solve(easy);
-//s.Print(r);
+evil = [0,0,7,8,0,0,0,0,9,
+        0,1,0,0,4,3,0,0,0,
+        8,0,0,0,0,0,0,4,0,
+        9,0,6,0,0,0,0,1,0,
+        0,0,2,7,0,6,4,0,0,
+        0,3,0,0,0,0,9,0,8,
+        0,7,0,0,0,0,0,0,5,
+        0,0,0,3,1,0,0,9,0,
+        2,0,0,0,0,4,6,0,0];
+
+runx = function (puzzle, times) {
+    var i,s,t0,t1,ms,r;
+    s = new Sudoku();
+    t0 = new Date();
+    for (i=0;i<times;i=i+1) {
+        r = s.Solve(puzzle);
+    } 
+    t1 = new Date();
+    ms = t1 -t0;
+    console.log('total:',ms,'avg:',ms/(times + 0.0),'persec:',1000/(ms/(times + 0.0)));
+};
