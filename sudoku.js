@@ -3,8 +3,12 @@
         this.gridsize = 9;
         
     }
+    
+    if (this.Sudoku === undefined) {
+        this.Sudoku = {};
+    }
 
-    this.Sudoku = Sudoku;
+    this.Sudoku.Solver = Sudoku;
 
     /*
         Solve is the entry point, it will either return a completed
@@ -252,52 +256,242 @@
         
 }());
 
-var easy,easyb,medium,mediumb,evil,s,runx;
+(function () {
+    
+    function UI () {
 
-// not broken
-easyb = [7,0,1,5,9,0,0,4,0,
-        8,3,0,0,6,0,1,9,0,
-        0,9,2,0,0,0,0,0,0,
-        0,0,0,9,1,0,8,6,0,
-        0,0,8,6,0,4,5,0,0,
-        0,5,6,0,7,8,0,0,0,
-        0,0,0,0,0,0,7,3,0,
-        0,7,4,0,3,0,0,1,2,
-        0,2,0,0,4,9,6,0,5];
+        this.solver = new Sudoku.Solver();
+        this.puzzles = new Sudoku.Puzzles();
 
-easy = [0,3,4,0,1,0,0,6,0,
-        0,0,0,0,2,8,0,0,0,
-        1,8,9,6,0,0,3,0,0,
-        6,0,0,5,0,0,0,3,0,
-        3,0,1,2,0,7,5,0,8,
-        0,9,0,0,0,3,0,0,6,
-        0,0,5,0,0,6,4,8,1,
-        0,0,0,1,8,0,0,0,0,
-        0,1,0,0,5,0,6,7,0];
+        this.initial = [];
+        this.solved  = [];
 
-// http://www.websudoku.com/?level=2&set_id=5949626450
-medium = [0,3,6,1,0,0,5,0,0,
-          0,0,8,0,6,0,0,3,0,
-          0,2,0,8,0,0,0,0,0,
-          0,0,3,4,5,0,0,9,0,
-          0,9,0,0,0,0,0,1,0,
-          0,1,0,0,2,6,4,0,0,
-          0,0,0,0,0,9,0,7,0,
-          0,7,0,0,4,0,8,0,0,
-          0,0,1,0,0,8,6,2,0];
+    }
 
-// http://www.websudoku.com/?level=2&set_id=7019587306
-mediumb = [0,0,1,8,0,0,0,0,7,
-           0,0,3,0,2,0,1,0,0,
-           2,7,5,0,9,0,8,0,0,
-           0,8,0,0,0,0,0,0,9,
-           0,1,0,0,7,0,0,3,0,
-           5,0,0,0,0,0,0,1,0,
-           0,0,4,0,3,0,9,8,1,
-           0,0,9,0,6,0,7,0,0,
-           1,0,0,0,0,9,6,0,0];
+    if (this.Sudoku === undefined) {
+        this.Sudoku = {};
+    }
 
-evil = [0,0,7,8,0,0,0,0,9,
+    this.Sudoku.UI = UI;    
+
+    /*
+        Populate populates the html grid with a partially completed
+        sudoko grid
+
+        @param a {array} sudoku grid
+        @return none
+    */
+    UI.prototype.Populate = function (a) {
+        var i;
+        for (i=0;i<a.length;i=i+1) {
+            if (a[i] === 0) {
+                $('td #' + i).html('<input maxlength="1" size="1"/>');
+                $('td #' + i).addClass('input');
+                $('td #' + i).addClass('value');
+                $('td #' + i).addClass('cell');
+            } else {
+                $('td #' + i).text(a[i]);
+                $('td #' + i).addClass('value');
+                $('td #' + i).addClass('cell');
+            }
+        }    
+
+        try {
+            this.solved = this.solver.Solve(a);
+            this.initial = a;
+        } catch (e1) {
+            alert('unable to solve puzzle');
+        }
+        
+    };
+   
+    /*
+        ReadGrid parses the html grid and returns an array
+        representing it.
+
+        @return {array} sudoku grid as array
+    */ 
+    UI.prototype.ReadGrid = function () {
+        var i,a,val;
+        a = [];
+        for(i=0;i<81;i=i+1) {
+            val = parseInt($('td #' + i).text(),10);
+            if (isNaN(val)) {
+                val = parseInt($('td #' + i + ' input').val(),10);
+                if (isNaN(val)) {
+                    val = 0;
+                }
+            }
+            a.push(val);
+        }
+        return a;
+    };
+
+
+    /*
+        FindMistakes compares all user input with a completed version of the puzzle
+        an array containing objects describing the mistakes is returned.
+        
+        an array of zero length means that no mistakes were found.
+        
+        @return {array} containing mistake objects
+    */
+    UI.prototype.FindMistakes = function () {
+        var cur,i, mistakes;
+
+        mistakes = [];
+        cur = this.ReadGrid();
+        for (i=0;i<cur.length;i=i+1) {
+            if (cur[i] !== 0) {
+                if (cur[i] !== this.solved[i]) {
+                    mistakes.push({ position: i,
+                                    current : cur[i],
+                                    solved  : this.solved[i] });
+                }
+            }
+        }
+        return mistakes;
+    };
+
+    /*
+        FindPossibles finds all possible numbers which could be displayed
+        for an uncompleted cell. 
+
+        A completed cell will contain a 0 length array.
+
+        If the user has made mistakes, these will be reflected in the output
+
+        @return {array} with an array containing all possibilities at all positions
+    */
+    UI.prototype.FindPossibles = function () {
+        var cur, i, possibles, p;
+        
+        possibles = [];
+        cur = this.ReadGrid();
+        for (i=0;i<cur.length;i=i+1) {
+            if (cur[i] === 0) {
+                p = this.solver.Possible(cur,i);
+                possibles.push(p);
+            } else {
+                possibles.push([]);
+            }
+        }
+        return possibles; 
+    };
+
+
+    /*
+        Find remaining returns the number of remaining squares until the 
+        grid has been completed
+
+        @returns {number} number of remaining squares to complete
+    */
+    UI.prototype.FindRemaining = function () {
+        var i, cur, remaining;
+        cur = this.ReadGrid();
+        remaining = 0;
+        for (i=0;i<cur.length;i=i+1) {
+            if (cur[i] === 0) {
+                remaining = remaining + 1;
+            }
+        }
+        return remaining;
+    };
+
+}());
+
+(function () {
+
+    function Puzzles () {
+        this.list = [];
+        this.Init();
+    }
+
+    if (this.Sudoku === undefined) {
+        this.Sudoku = {};
+    }
+
+    this.Sudoku.Puzzles = Puzzles;  
+
+    /*
+        Init loads our default selection of puzzles.
+        
+        @return none
+    */
+    Puzzles.prototype.Init = function () {
+        this.AddPuzzle([7,0,1,5,9,0,0,4,0,
+                        8,3,0,0,6,0,1,9,0,
+                        0,9,2,0,0,0,0,0,0,
+                        0,0,0,9,1,0,8,6,0,
+                        0,0,8,6,0,4,5,0,0,
+                        0,5,6,0,7,8,0,0,0,
+                        0,0,0,0,0,0,7,3,0,
+                        0,7,4,0,3,0,0,1,2,
+                        0,2,0,0,4,9,6,0,5],'easy');
+
+        this.AddPuzzle([0,3,4,0,1,0,0,6,0,
+                        0,0,0,0,2,8,0,0,0,
+                        1,8,9,6,0,0,3,0,0,
+                        6,0,0,5,0,0,0,3,0,
+                        3,0,1,2,0,7,5,0,8,
+                        0,9,0,0,0,3,0,0,6,
+                        0,0,5,0,0,6,4,8,1,
+                        0,0,0,1,8,0,0,0,0,
+                        0,1,0,0,5,0,6,7,0],'easy');
+
+        this.AddPuzzle([0,3,6,1,0,0,5,0,0,
+                        0,0,8,0,6,0,0,3,0,
+                        0,2,0,8,0,0,0,0,0,
+                        0,0,3,4,5,0,0,9,0,
+                        0,9,0,0,0,0,0,1,0,
+                        0,1,0,0,2,6,4,0,0,
+                        0,0,0,0,0,9,0,7,0,
+                        0,7,0,0,4,0,8,0,0,
+                        0,0,1,0,0,8,6,2,0],'medium');
+
+        this.AddPuzzle([0,0,1,8,0,0,0,0,7,
+                        0,0,3,0,2,0,1,0,0,
+                        2,7,5,0,9,0,8,0,0,
+                        0,8,0,0,0,0,0,0,9,
+                        0,1,0,0,7,0,0,3,0,
+                        5,0,0,0,0,0,0,1,0,
+                        0,0,4,0,3,0,9,8,1,
+                        0,0,9,0,6,0,7,0,0,
+                        1,0,0,0,0,9,6,0,0],'medium');
+
+        this.AddPuzzle([0,0,7,8,0,0,0,0,9,
+                        0,1,0,0,4,3,0,0,0,
+                        8,0,0,0,0,0,0,4,0,
+                        9,0,6,0,0,0,0,1,0,
+                        0,0,2,7,0,6,4,0,0,
+                        0,3,0,0,0,0,9,0,8,
+                        0,7,0,0,0,0,0,0,5,
+                        0,0,0,3,1,0,0,9,0,
+                        2,0,0,0,0,4,6,0,0],'evil');
+    };
+
+    /*
+        AddPuzzle will add a puzzle of a difficulty to the
+        puzzle list.
+
+        @param p {array} sudoku puzzle
+        @param d {string} difficult of puzzle
+        @return none
+    */
+    Puzzles.prototype.AddPuzzle = function (p,d) {
+        this.list.push({ difficulty : d,
+                         puzzle: p});
+    };
+    
+}());
+
+// just for debug
+var ui;
+
+$(document).ready(function () {
+    var evil;
+    ui  = new Sudoku.UI();
+    evil = [0,0,7,8,0,0,0,0,9,
         0,1,0,0,4,3,0,0,0,
         8,0,0,0,0,0,0,4,0,
         9,0,6,0,0,0,0,1,0,
@@ -306,15 +500,7 @@ evil = [0,0,7,8,0,0,0,0,9,
         0,7,0,0,0,0,0,0,5,
         0,0,0,3,1,0,0,9,0,
         2,0,0,0,0,4,6,0,0];
-
-runx = function (puzzle, times) {
-    var i,s,t0,t1,ms,r;
-    s = new Sudoku();
-    t0 = new Date();
-    for (i=0;i<times;i=i+1) {
-        r = s.Solve(puzzle);
-    } 
-    t1 = new Date();
-    ms = t1 -t0;
-    console.log('total:',ms,'avg:',ms/(times + 0.0),'persec:',1000/(ms/(times + 0.0)));
-};
+ 
+    ui.Populate(evil);
+    ui.ReadGrid();
+});

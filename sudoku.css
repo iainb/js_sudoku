@@ -1,0 +1,47 @@
+body,table,tr,td,div
+{
+    margin: 0px;
+    padding: 0px;
+    border: 0px;
+    border-collapse: collapse;
+    font-family: Arial;
+}
+
+.value 
+{
+    text-align: center;
+    font-size: 30px;
+    background-color 
+}
+
+input
+{
+    border: 0px solid;
+    margin: 0px;
+    padding: 0px;
+    text-align: center;
+    vertical-align: middle;
+    position: relative;
+    width: 45px;
+    height: 45px;
+    outline: none;
+    font-size: 30px;
+}
+
+input:hover
+{
+    background-color: #AAAAAA;
+}
+
+.input:hover
+{
+    background-color: #AAAAAA;
+}
+
+.cell 
+{
+    width: 45px;
+    height: 45px;
+    border: 2px solid;
+}
+
