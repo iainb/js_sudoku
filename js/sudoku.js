@@ -266,6 +266,8 @@
         this.initial = [];
         this.solved  = [];
 
+        this.displayhints = true;
+
     }
 
     if (this.Sudoku === undefined) {
@@ -398,6 +400,95 @@
         return remaining;
     };
 
+    /*
+        SetupClickHandlers sets up the basic click handlers
+        to make the sudoku grid interactive
+
+        @return none
+    */
+    UI.prototype.SetupClickHandlers = function () {
+        var self;
+
+        self = this;
+
+        $('#status').click(function () {
+            var msg;
+            msg = 'There are ' + self.FindRemaining() + ' remaining\n';
+            msg = msg + ' you have made ' + self.FindMistakes().length + ' mistakes so far';
+            alert(msg);
+        });
+        
+        $('#hints').click(function () {
+            console.log(this);
+        });
+
+        $('#enablehints').button('toggle');
+
+        $('input').keyup(function() {
+            self.HandleInput($(this).val(),$(this).parent().attr('id'));
+        });
+    };
+
+    /*
+        SetupHints sets up the hints needed for when displayhints
+        is enabled.
+
+        @return none
+    */
+    UI.prototype.SetupHints = function () {
+        var i;
+        for(i=0;i<81;i=i+1) {
+            $('#' + i).tooltip({placement: 'right',
+                                title: '',
+                                trigger : 'hover',
+                                delay: { show: 3000, hide: 10}});        
+        }
+    };
+
+    /*
+        UpdateHints updates all of the tooltip hints if
+        hints (this.displayhints) are enabled. Otherwise they
+        will be disabled.
+
+        @return none
+    */
+    UI.prototype.UpdateHints = function () {
+        var possibles,i,self,doit;
+
+        possibles = this.FindPossibles();
+
+        for (i=0;i<possibles.length;i=i+1) {
+            if (possibles[i].length !== 0 && this.displayhints === true) {
+                $('#' + i).attr('title',possibles[i].join(','));
+                $('#' + i).tooltip('fixTitle');
+                $('#' + i).tooltip('enable');
+            } else {
+                $('#' + i).tooltip('disable');
+            }
+        }
+    };
+
+    /*
+        Validate input and update display
+        @param value {string} update value
+        @param loc {int} position in array
+        @return none
+    */
+    UI.prototype.HandleInput = function (value,loc) {
+        value = parseInt(value,10); 
+        if (isNaN(value) === true) {
+            $('td #' + loc + ' input').val('');
+        } else {
+            if (value === 0) {
+                $('td #' + loc + ' input').val('');
+            } else {
+                this.UpdateHints();
+            }
+        }
+        
+        
+    };
+
 }());
 
 (function () {
@@ -482,25 +573,38 @@
         this.list.push({ difficulty : d,
                          puzzle: p});
     };
-    
+
 }());
 
 // just for debug
 var ui;
 
 $(document).ready(function () {
-    var evil;
+    var evil,easy ;
     ui  = new Sudoku.UI();
-    evil = [0,0,7,8,0,0,0,0,9,
-        0,1,0,0,4,3,0,0,0,
-        8,0,0,0,0,0,0,4,0,
-        9,0,6,0,0,0,0,1,0,
-        0,0,2,7,0,6,4,0,0,
-        0,3,0,0,0,0,9,0,8,
-        0,7,0,0,0,0,0,0,5,
-        0,0,0,3,1,0,0,9,0,
-        2,0,0,0,0,4,6,0,0];
+        evil        =  [0,6,5,0,0,0,0,7,0,
+                        0,0,0,7,0,0,2,0,0,
+                        0,0,0,0,4,0,9,1,0,
+                        0,7,0,0,8,9,5,0,0,
+                        0,0,0,0,3,0,0,0,0,
+                        0,0,8,2,7,0,0,4,0,
+                        0,5,6,0,9,0,0,0,0,
+                        0,0,7,0,0,8,0,0,0,
+                        0,2,0,0,0,0,1,9,0];
+
+        easy = [0,2,5,0,0,0,9,0,4,
+                0,8,0,4,0,0,6,0,0,
+                6,0,0,9,0,0,2,8,1,
+                8,0,0,0,4,0,5,1,0,
+                0,0,2,8,0,3,7,0,0,
+                0,6,4,0,7,0,0,0,8,
+                2,5,1,0,0,9,0,0,7,
+                0,0,8,0,0,6,0,9,0,
+                7,0,6,0,0,0,8,3,0];
  
     ui.Populate(evil);
     ui.ReadGrid();
+    ui.SetupClickHandlers();
+    ui.SetupHints();
+    ui.UpdateHints();
 });

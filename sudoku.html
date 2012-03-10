@@ -1,9 +1,12 @@
 <!doctype html>
 <html>
     <head>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css" />
     <link rel="stylesheet" type="text/css" href="sudoku.css" />
     <script type="text/javascript" src="jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.js"></script>
     <script type="text/javascript" src="sudoku.js"></script>
+    <script type="text/javascript" src="Encoder.js"></script>
     </head>
     <body>
     <div >
@@ -187,6 +190,15 @@
             </tr>
 
         </table>
+    </div>
+    <div>
+        <div>
+            <button id='status' class='btn'>How am I doing?</button>
+        </div>
+        <div id='hints' class='btn-group' data-toggle='buttons-radio'>
+            <button id='disablehints' class='btn'>Enable Hints</button>
+            <button id='enablehints' class='btn' data-toggle='button'>Disable Hints</button>
+        </div>
     </div>
     </body>
 <html>
