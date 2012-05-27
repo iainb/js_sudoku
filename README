@@ -1,0 +1,5 @@
+Sudoku solver written in Java Script, along with a html frontend using bootstrap and jquery.
+
+* solver.js  - completed Sudoku Solver in javascript
+* ui.js      - partially finished ui - along with hints system etc
+* puzzles.js - sudoku puzzles to load into the ui or solver
