@@ -8,7 +8,7 @@
         this.initial = [];
         this.solved  = [];
 
-        this.displayhints = true;
+        this.displayhints = false;
 
     }
 
@@ -160,11 +160,23 @@
             alert(msg);
         });
         
-        $('#hints').click(function () {
-            console.log(this);
+        $('#enablehints').click(function () {
+            if (self.displayhints === false) {
+                self.displayhints = true;
+                self.UpdateHints();
+            }
         });
 
-        $('#enablehints').button('toggle');
+        $('#disablehints').click(function () {
+            if (self.displayhints === true) {
+                self.displayhints = false;
+                self.UpdateHints();
+            }
+        });
+
+        // disablehints selected by default
+
+        $('#disablehints').button('toggle');
 
         $('input').keyup(function() {
             self.HandleInput($(this).val(),$(this).parent().attr('id'));
